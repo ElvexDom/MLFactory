@@ -11,8 +11,3 @@ dependencies = [
     "scikit-learn>=1.8.0",
     "streamlit>=1.55.0",
 ]
-
-[tool.uv.workspace]
-members = [
-    "src/front",
-]

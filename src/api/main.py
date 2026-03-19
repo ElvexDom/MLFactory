@@ -6,7 +6,7 @@ import os
 # Align path for internal imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from api.model_loader import load_production_model, model_cache
+from model_loader import load_production_model, model_cache
 
 app = FastAPI(title="ML Serving Factory")
 
