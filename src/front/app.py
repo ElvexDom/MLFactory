@@ -1,81 +1,105 @@
-import streamlit as st
-import pandas as pd
-import requests
 import os
-from dotenv import load_dotenv
+import streamlit as st
+import requests
+import pandas as pd
 
-# Load .env
-load_dotenv()
+# ----------------------------
+# CONFIGURATION
+# ----------------------------
+API_BASE_URL = os.getenv("API_URL", "http://localhost:8000")
+MODEL_NAME = "IrisClassifier"
+DATA_PATH = "/app/data/iris_test.csv"
 
-st.set_page_config(page_title="ML Factory - Vitrine", page_icon="🏢")
+st.set_page_config(page_title="Iris Prediction", layout="wide")
 
-st.title("🏢 ML Factory - Showcase")
+st.title("🚀 Iris Prediction Gateway")
+st.caption(f"Modèle cible : {MODEL_NAME}")
 
-# Config
-# When running in Docker, we use the internal service name 'api'
-DEFAULT_API_URL = os.getenv("API_URL", "http://localhost:8000")
-api_endpoint = st.sidebar.text_input("API Endpoint", DEFAULT_API_URL)
+# ----------------------------
+# ENTRÉE DES DONNÉES
+# ----------------------------
+col1, col2 = st.columns([1, 1])
 
-# Header with Version Badge
-try:
-    health = requests.get(f"{api_endpoint}/health").json()
-    version = health.get("model_version", "Discovery")
-    st.sidebar.success(f"🟢 Modèle en ligne : Version {version}")
-except:
-    st.sidebar.error("🔴 API Hors-ligne")
-    version = "None"
+with col1:
+    mode = st.radio(
+        "Source des données",
+        ["Saisie manuelle", "Dataset de test (CSV)"]
+    )
 
-st.markdown(f"### 🎯 Inférence en temps réel (Version : {version})")
-
-# Data Loading
-try:
-    test_data = pd.read_csv("./data/iris_test.csv")
-    st.write("Chargement de `iris_test.csv` réussi.")
+    features = {}
     
-    selected_index = st.selectbox("Choisir une ligne de test", test_data.index)
-    sample = test_data.iloc[selected_index]
-    
-    features = sample.drop("target").tolist()
-    true_label = int(sample["target"])
-    
-    st.write("**Features sélectionnées :**", features)
-    st.write(f"**Vraie étiquette (Ground Truth) :** {true_label}")
-    
-except Exception as e:
-    st.error(f"Fichier de test introuvable : {e}")
-    features = [5.1, 3.5, 1.4, 0.2]
-
-if st.button("Lancer l'Inférence"):
-    response = requests.post(f"{api_endpoint}/predict", json={"features": features})
-    
-    if response.status_code == 200:
-        res = response.json()
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.metric("Prédiction", res["class_name"])
-            st.write(f"ID Version : `{res['model_version']}`")
+    if mode == "Dataset de test (CSV)":
+        try:
+            df = pd.read_csv(DATA_PATH)
+            row_index = st.selectbox("Choisir une ligne", df.index)
+            selected_row = df.loc[row_index]
             
-        with col2:
-            if res["probabilities"]:
-                st.write("**Probabilités :**")
-                probs_df = pd.DataFrame({
-                    "Espèce": ["Setosa", "Versicolor", "Virginica"],
-                    "Confiance": res["probabilities"]
-                })
-                st.bar_chart(probs_df.set_index("Espèce"))
-            else:
-                st.warning("Le modèle ne supporte pas le calcul de probabilités.")
+            # Dictionnaire de correspondance (Mapping)
+            mapping_fleurs = {0: "Setosa", 1: "Versicolor", 2: "Virginica"}
+            
+            # Conversion en dictionnaire
+            features = selected_row.to_dict()
+            
+            # On extrait la target pour l'affichage
+            target_value = features.pop("target", None)
+            
+            st.write("**Données envoyées à l'API :**")
+            st.json(features)
+            
+            if target_value is not None:
+                # On utilise le mapping pour afficher le nom au lieu du chiffre
+                nom_fleur_reel = mapping_fleurs.get(int(target_value), "Inconnue")
+                st.info(f"🎯 **Espèce réelle (CSV) :** {nom_fleur_reel}")
                 
-        if res["prediction"] == true_label:
-            st.balloons()
-            st.success("✅ Prédiction Correcte !")
-        else:
-            st.error("❌ Prédiction Incorrecte")
-            
+        except Exception as e:
+            st.error(f"Erreur de chargement CSV : {e}")
+            st.stop()
     else:
-        st.error(f"Erreur API : {response.text}")
+        # Correspondance exacte avec les noms de colonnes attendus par le modèle
+        features["sepal length (cm)"] = st.number_input("Sepal Length", 0.0, 10.0, 5.1)
+        features["sepal width (cm)"] = st.number_input("Sepal Width", 0.0, 10.0, 3.5)
+        features["petal length (cm)"] = st.number_input("Petal Length", 0.0, 10.0, 1.4)
+        features["petal width (cm)"] = st.number_input("Petal Width", 0.0, 10.0, 0.2)
 
-st.divider()
-st.caption("Infrastructure ML Factory | Zero-Downtime Deployment Demo")
+# ----------------------------
+# APPEL API & RÉSULTATS
+# ----------------------------
+with col2:
+    st.subheader("Résultat de l'inférence")
+    
+    if st.button("Lancer la prédiction", use_container_width=True):
+        # On encapsule les features dans la clé "payload"
+        full_payload = {"payload": features}
+        
+        try:
+            endpoint = f"{API_BASE_URL}/{MODEL_NAME}/predict"
+            
+            with st.spinner(f"Calcul en cours pour {MODEL_NAME}..."):
+                response = requests.post(endpoint, json=full_payload)
+                response.raise_for_status()
+                
+            data = response.json()
+            
+            # Extraction des résultats
+            class_names = ["Setosa", "Versicolor", "Virginica"]
+            pred_idx = int(data["prediction"]) # On s'assure que c'est un entier
+            version = data.get("version", "Inconnue")
+            
+            st.success(f"### Classe prédite : **{class_names[pred_idx]}**")
+            st.write(f"Index prédit : `{pred_idx}`")
+            st.info(f"Version du modèle : v{version}")
+
+            # Affichage des probabilités
+            if data.get("probabilities"):
+                st.write("---")
+                st.write("**Confiance du modèle :**")
+                prob_df = pd.DataFrame({
+                    "Classe": class_names,
+                    "Probabilité": data["probabilities"]
+                })
+                st.bar_chart(prob_df.set_index("Classe"))
+
+        except requests.exceptions.HTTPError as e:
+            st.error(f"Erreur API ({e.response.status_code}): {e.response.text}")
+        except Exception as e:
+            st.error(f"Erreur de connexion : {e}")
