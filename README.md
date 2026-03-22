@@ -165,3 +165,20 @@ redémarrage**.
 - **API** : Service backend exposant les endpoints  
 - **MLflow** : Gestion des versions et promotion des modèles  
 - **MinIO** : Stockage des artefacts et modèles
+
+------------------------------------------------------------------------
+
+## 🔐 Mot de passe pour `MLFLOW_CRYPTO_KEK_PASSPHRASE`
+
+Pour sécuriser le chiffrement des modèles MLflow, utilisez une passphrase forte pour la variable **`MLFLOW_CRYPTO_KEK_PASSPHRASE`**
+
+Vous pouvez générer un nouveau mot de passe sécurisé avec la commande :
+
+```bash
+openssl rand -base64 32
+```
+
+### ⚠️ Important
+
+Si vous devez réinstaller MLflow sur le même serveur, conservez exactement cette clé.
+Si elle est perdue ou modifiée, toutes les données chiffrées existantes dans MLflow seront irrécupérables.
