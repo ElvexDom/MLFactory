@@ -152,9 +152,16 @@ redémarrage**.
 
 ## 🌐 Accès aux services
 
-  Service    URL
-  ---------- -----------------------
-  Front      http://localhost:8501
-  API        http://localhost:8000
-  MLflow     http://localhost:5000
-  MinIO      http://localhost:9001
+| Service | URL                    | Login        | Mot de passe     | Note                     |
+|---------|------------------------|--------------|------------------|--------------------------|
+| Front   | http://localhost:8501  | —            | —                | Interface Utilisateur     |
+| API     | Interne Docker         | —            | —                | Port 8000 (Backend)      |
+| MLflow  | http://localhost:5000  | admin        | password1234     | Registry des modèles      |
+| MinIO   | http://localhost:9001  | minio_user   | minio_password   | Console S3                |
+
+### 💡 Rappel
+
+- **Front** : Interface pour tester les prédictions  
+- **API** : Service backend exposant les endpoints  
+- **MLflow** : Gestion des versions et promotion des modèles  
+- **MinIO** : Stockage des artefacts et modèles

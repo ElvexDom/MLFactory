@@ -79,7 +79,9 @@ services:
     depends_on:
       - mlflow
     environment:
-      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_ADMIN_USERNAME=${MLFLOW_ADMIN_USERNAME}
+      - MLFLOW_ADMIN_PASSWORD=${MLFLOW_ADMIN_PASSWORD}
     networks:
       - mlflow-hub
 
@@ -97,7 +99,7 @@ services:
     depends_on:
       - api
     environment:
-      API_URL: ${API_URL}
+      - API_URL=${API_URL}
     networks:
       - mlflow-hub
 

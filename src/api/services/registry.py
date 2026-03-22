@@ -4,10 +4,6 @@ from mlflow.tracking import MlflowClient
 
 class ModelRegistry:
     def __init__(self):
-            # Configuration de l'authentification MLflow
-            os.environ['MLFLOW_TRACKING_USERNAME'] = os.getenv("MLFLOW_ADMIN_USERNAME", "admin")
-            os.environ['MLFLOW_TRACKING_PASSWORD'] = os.getenv("MLFLOW_ADMIN_PASSWORD", "password1234")
-            
             # Initialisation du client Tracking
             self.tracking_uri = os.getenv("MLFLOW_TRACKING_URI")
             self.client = MlflowClient(tracking_uri=self.tracking_uri)
